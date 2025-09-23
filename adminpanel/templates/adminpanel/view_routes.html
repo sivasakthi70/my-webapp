@@ -1,0 +1,128 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>🛣️ View Routes | GreenRoute Admin</title>
+
+  <!-- ✅ Bootstrap -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <style>
+    body {
+      background: #f8fafc;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    }
+    .card {
+      border-radius: 15px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+    .table th {
+      text-transform: uppercase;
+      font-size: 0.85rem;
+      letter-spacing: 0.5px;
+    }
+    .btn {
+      border-radius: 8px;
+      font-weight: 500;
+    }
+    .btn-sm {
+      padding: 5px 10px;
+    }
+    .filter-form label {
+      margin-right: 8px;
+      font-weight: 600;
+    }
+    .filter-form input, 
+    .filter-form select {
+      margin-right: 12px;
+      margin-bottom: 8px;
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold text-dark">🛣️ View Routes</h2>
+    <a href="{% url 'adminpanel:admin_dashboard' %}" class="btn btn-outline-dark">
+      ⬅ Back to Dashboard
+    </a>
+  </div>
+
+  <!-- 🔍 Filter Form -->
+  <div class="card p-3 mb-4 bg-white">
+    <form method="get" class="filter-form d-flex flex-wrap align-items-center">
+      <label>User:</label>
+      <select name="user" class="form-select form-select-sm" style="width: 180px;">
+        <option value="">All</option>
+        {% for u in users %}
+          <option value="{{ u.id }}" {% if request.GET.user == u.id|stringformat:"s" %}selected{% endif %}>{{ u.username }}</option>
+        {% endfor %}
+      </select>
+
+      <label>Source:</label>
+      <input type="text" name="source" value="{{ request.GET.source|default_if_none:'' }}" class="form-control form-control-sm" placeholder="Enter source">
+
+      <label>From:</label>
+      <input type="date" name="start_date" value="{{ request.GET.start_date }}" class="form-control form-control-sm">
+
+      <label>To:</label>
+      <input type="date" name="end_date" value="{{ request.GET.end_date }}" class="form-control form-control-sm">
+
+      <button type="submit" class="btn btn-primary btn-sm ms-2">🔍 Filter</button>
+      <a href="{% url 'adminpanel:view_routes' %}" class="btn btn-secondary btn-sm ms-2">♻ Reset</a>
+    </form>
+  </div>
+
+  <!-- ✅ Table -->
+  <div class="card p-3 bg-white">
+    {% if routes %}
+      <div class="table-responsive">
+        <table class="table table-hover align-middle table-striped">
+          <thead class="table-success">
+            <tr>
+              <th>User</th>
+              <th>Source</th>
+              <th>Destination</th>
+              <th>Eco Cost</th>
+              <th>Pollution Index</th>
+              <th>Searched At</th>
+              <th class="text-center">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for route in routes %}
+              <tr>
+                <td class="fw-semibold">{{ route.user.username }}</td>
+                <td>{{ route.source }}</td>
+                <td>{{ route.destination }}</td>
+                <td><span class="badge bg-success">{{ route.eco_cost }}</span></td>
+                <td><span class="badge bg-danger">{{ route.pollution_index }}</span></td>
+                <td><span class="badge bg-info">{{ route.searched_at|date:"Y-m-d H:i" }}</span></td>
+                <td class="text-center">
+                  <a href="{% url 'adminpanel:edit_route' route.id %}" class="btn btn-primary btn-sm">✏ Edit</a>
+                  <form method="post" action="{% url 'adminpanel:delete_route' route.id %}" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger btn-sm">🗑 Delete</button>
+                  </form>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="text-muted text-center my-3">🚫 No route history available yet.</p>
+    {% endif %}
+  </div>
+</div>
+
+<!-- ✅ Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+</html>

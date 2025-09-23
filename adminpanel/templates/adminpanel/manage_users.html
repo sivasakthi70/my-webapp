@@ -1,0 +1,119 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>👥 Manage Users | GreenRoute Admin</title>
+
+  <!-- ✅ Bootstrap -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <style>
+    body {
+      background: #f8fafc;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    }
+    .card {
+      border-radius: 15px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+    .table th {
+      text-transform: uppercase;
+      font-size: 0.85rem;
+      letter-spacing: 0.5px;
+    }
+    .btn {
+      border-radius: 8px;
+      font-weight: 500;
+    }
+    .btn-sm {
+      padding: 5px 10px;
+    }
+    .search-box {
+      max-width: 350px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold text-dark">👥 Manage Users</h2>
+    <a href="{% url 'adminpanel:add_user' %}" class="btn btn-success">
+      ➕ Add New User
+    </a>
+  </div>
+
+  <!-- 🔍 Search -->
+  <div class="mb-3">
+    <input type="text" id="userSearch" class="form-control search-box" placeholder="🔍 Search users...">
+  </div>
+
+  <div class="card p-3 bg-white">
+    {% if users %}
+      <div class="table-responsive">
+        <table class="table table-hover align-middle table-striped">
+          <thead class="table-success">
+            <tr>
+              <th>Username</th>
+              <th>Date Joined</th>
+              <th>Last Login</th>
+              <th class="text-center">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="userTable">
+            {% for user in users %}
+              <tr>
+                <td class="fw-semibold">{{ user.username }}</td>
+                <td><span class="badge bg-info">{{ user.date_joined|date:"Y-m-d H:i" }}</span></td>
+                <td>
+                  {% if user.last_login %}
+                    <span class="badge bg-secondary">{{ user.last_login|date:"Y-m-d H:i" }}</span>
+                  {% else %}
+                    <span class="badge bg-warning text-dark">Never</span>
+                  {% endif %}
+                </td>
+                <td class="text-center">
+                  <a href="{% url 'adminpanel:edit_user' user.id %}" class="btn btn-primary btn-sm">
+                    ✏ Edit
+                  </a>
+                  <form method="post" action="{% url 'adminpanel:delete_user' user.id %}" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger btn-sm">
+                      🗑 Delete
+                    </button>
+                  </form>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="text-muted text-center my-3">🚫 No users found.</p>
+    {% endif %}
+  </div>
+
+  <!-- 🔙 Back Button -->
+  <div class="mt-4">
+    <a href="{% url 'adminpanel:admin_dashboard' %}" class="btn btn-outline-dark">⬅ Back to Dashboard</a>
+  </div>
+</div>
+
+<!-- ✅ Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- 🔍 Live Search -->
+<script>
+  document.getElementById("userSearch").addEventListener("keyup", function() {
+    let filter = this.value.toLowerCase();
+    let rows = document.querySelectorAll("#userTable tr");
+    rows.forEach(row => {
+      let text = row.textContent.toLowerCase();
+      row.style.display = text.includes(filter) ? "" : "none";
+    });
+  });
+</script>
+
+</body>
+</html>

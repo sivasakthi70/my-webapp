@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow-lg rounded-3">
+        <div class="card-header bg-success text-white">
+            <h3 class="mb-0">✏️ Edit Route</h3>
+        </div>
+        <div class="card-body">
+            <form method="post" class="needs-validation" novalidate>
+                {% csrf_token %}
+
+                <!-- User -->
+                <div class="mb-3">
+                    <label for="user" class="form-label">User</label>
+                    <select class="form-select" name="user" id="user" required>
+                        {% for u in users %}
+                            <option value="{{ u.id }}" {% if route.user.id == u.id %}selected{% endif %}>
+                                {{ u.username }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Source -->
+                <div class="mb-3">
+                    <label for="source" class="form-label">Source</label>
+                    <input type="text" class="form-control" name="source" id="source" 
+                           value="{{ route.source }}" required>
+                </div>
+
+                <!-- Destination -->
+                <div class="mb-3">
+                    <label for="destination" class="form-label">Destination</label>
+                    <input type="text" class="form-control" name="destination" id="destination" 
+                           value="{{ route.destination }}" required>
+                </div>
+
+                <!-- Distance -->
+                <div class="mb-3">
+                    <label for="distance_km" class="form-label">Distance (km)</label>
+                    <input type="number" class="form-control" step="0.01" name="distance_km" id="distance_km" 
+                           value="{{ route.distance_km }}" min="0" required>
+                </div>
+
+                <!-- Pollution -->
+                <div class="mb-3">
+                    <label for="pollution_index" class="form-label">Pollution Index (%)</label>
+                    <input type="number" class="form-control" step="0.01" name="pollution_index" id="pollution_index" 
+                           value="{{ route.pollution_index }}" min="0" max="100" required>
+                </div>
+
+                <!-- Green Cover -->
+                <div class="mb-3">
+                    <label for="green_cover" class="form-label">Green Cover (%)</label>
+                    <input type="number" class="form-control" step="0.01" name="green_cover" id="green_cover" 
+                           value="{{ route.green_cover }}" min="0" max="100" required>
+                </div>
+
+                <!-- Eco Cost -->
+                <div class="mb-3">
+                    <label for="eco_cost" class="form-label">Eco Cost (%)</label>
+                    <input type="number" class="form-control" step="0.01" name="eco_cost" id="eco_cost" 
+                           value="{{ route.eco_cost }}" min="0" max="100" required>
+                </div>
+
+                <!-- Buttons -->
+                <div class="d-flex justify-content-between">
+                    <a href="{% url 'adminpanel:view_routes' %}" class="btn btn-secondary">
+                        ❌ Cancel
+                    </a>
+                    <button type="submit" class="btn btn-success">
+                        💾 Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Optional: Bootstrap validation script -->
+<script>
+    (function () {
+        'use strict'
+        const forms = document.querySelectorAll('.needs-validation')
+        Array.from(forms).forEach(form => {
+            form.addEventListener('submit', event => {
+                if (!form.checkValidity()) {
+                    event.preventDefault()
+                    event.stopPropagation()
+                }
+                form.classList.add('was-validated')
+            }, false)
+        })
+    })()
+</script>
+{% endblock %}

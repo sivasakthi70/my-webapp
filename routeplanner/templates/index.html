@@ -1,0 +1,225 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>🌿 GreenRoute — Eco-Friendly Route Planner</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Bootstrap -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+
+  <style>
+    #map { height: 500px; border-radius: 12px; }
+    .leaflet-container { cursor: crosshair; }
+  </style>
+</head>
+<body class="bg-light">
+
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-success shadow">
+  <div class="container-fluid">
+    <a class="navbar-brand fw-bold" href="/">🌿 GreenRoute</a>
+    <div class="collapse navbar-collapse justify-content-end" id="navMenu">
+      <ul class="navbar-nav">
+        {% if user.is_authenticated %}
+          <li class="nav-item"><span class="navbar-text text-white me-3">Welcome, {{ user.username }}!</span></li>
+          <li class="nav-item">
+            <form method="post" action="{% url 'logout' %}">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-outline-light btn-sm">Logout</button>
+            </form>
+          </li>
+        {% else %}
+          <li class="nav-item"><a class="nav-link" href="{% url 'login' %}?next={{ request.path }}">Login</a></li>
+          <li class="nav-item"><a class="nav-link" href="{% url 'signup' %}">Sign Up</a></li>
+        {% endif %}
+        <li class="nav-item ms-2">
+          <a href="{% url 'adminpanel:admin_login' %}" class="btn btn-warning btn-sm fw-bold">Admin Login</a>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<div class="container py-4">
+  {% if messages %}
+    <div class="mb-3">
+      {% for message in messages %}
+        <div class="alert alert-success">{{ message }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  {% if user.is_authenticated %}
+    <!-- Route Form -->
+    <div class="card shadow-sm mb-4">
+      <div class="card-body">
+        <h5 class="card-title">🚦 Plan Your Eco-Friendly Route</h5>
+        <form id="route-form">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label for="source" class="form-label">Source</label>
+            <input type="text" id="source" name="source" class="form-control"
+                   placeholder="Click on map or enter start location" required>
+          </div>
+          <div class="mb-3">
+            <label for="destination" class="form-label">Destination</label>
+            <input type="text" id="destination" name="destination" class="form-control"
+                   placeholder="Click on map or enter end location" required>
+          </div>
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-success w-100">Find Eco-Friendly Route</button>
+            <button type="button" id="reset-map" class="btn btn-outline-secondary">Reset</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="row g-3 mb-4">
+      <div class="col-md-3">
+        <div class="card text-center shadow-sm">
+          <div class="card-body">
+            <h6 class="card-title">🚗 Distance</h6>
+            <h3><span id="distance">-</span> km</h3>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card text-center shadow-sm">
+          <div class="card-body">
+            <h6 class="card-title">☣️ Pollution</h6>
+            <h3 class="text-danger"><span id="pollution">-</span>%</h3>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card text-center shadow-sm">
+          <div class="card-body">
+            <h6 class="card-title">🌳 Green Cover</h6>
+            <h3 class="text-success"><span id="green">-</span>%</h3>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card text-center shadow-sm">
+          <div class="card-body">
+            <h6 class="card-title">♻️ Eco Cost</h6>
+            <h3 class="text-primary"><span id="eco">-</span>%</h3>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Map -->
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h5 class="card-title">🗺️ Map</h5>
+        <div id="map"></div>
+      </div>
+    </div>
+  {% else %}
+    <div class="text-center mt-5">
+      <p class="lead">🔒 Please <a href="{% url 'login' %}?next={{ request.path }}">login</a> to use the route planner.</p>
+    </div>
+  {% endif %}
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+{% if user.is_authenticated %}
+<script>
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+      const cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+  const csrftoken = getCookie('csrftoken');
+
+  const map = L.map('map').setView([20, 78], 5);
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19,
+    attribution: "&copy; OpenStreetMap contributors"
+  }).addTo(map);
+
+  const redIcon = L.icon({
+    iconUrl: "https://maps.google.com/mapfiles/ms/icons/red-dot.png",
+    iconSize: [32, 32],
+    iconAnchor: [16, 32],
+    popupAnchor: [0, -32]
+  });
+
+  let sourceMarker = null, destMarker = null, routeLayer = null;
+  let clickStep = 0;
+
+  map.on("click", (e) => {
+    if (clickStep === 0) {
+      if (sourceMarker) map.removeLayer(sourceMarker);
+      sourceMarker = L.marker(e.latlng, { icon: redIcon }).addTo(map).bindPopup("Source").openPopup();
+      document.getElementById("source").value = `${e.latlng.lat.toFixed(5)},${e.latlng.lng.toFixed(5)}`;
+      clickStep = 1;
+    } else {
+      if (destMarker) map.removeLayer(destMarker);
+      destMarker = L.marker(e.latlng, { icon: redIcon }).addTo(map).bindPopup("Destination").openPopup();
+      document.getElementById("destination").value = `${e.latlng.lat.toFixed(5)},${e.latlng.lng.toFixed(5)}`;
+      clickStep = 0;
+    }
+  });
+
+  document.getElementById("reset-map").addEventListener("click", () => {
+    if (sourceMarker) map.removeLayer(sourceMarker);
+    if (destMarker) map.removeLayer(destMarker);
+    if (routeLayer) map.removeLayer(routeLayer);
+    document.getElementById("source").value = "";
+    document.getElementById("destination").value = "";
+    clickStep = 0;
+  });
+
+  document.getElementById("route-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const source = document.getElementById("source").value.trim();
+    const destination = document.getElementById("destination").value.trim();
+    if (!source || !destination) { alert("⚠️ Please select both Source and Destination"); return; }
+
+    try {
+      const res = await fetch(`/api/route/?source=${encodeURIComponent(source)}&destination=${encodeURIComponent(destination)}`, {
+        headers: { 'X-CSRFToken': csrftoken }
+      });
+      const data = await res.json();
+      if (data.error) { alert(data.error); return; }
+
+      document.getElementById("distance").textContent = data.distance;
+      document.getElementById("pollution").textContent = data.pollution_index;
+      document.getElementById("green").textContent = data.green_cover;
+      document.getElementById("eco").textContent = data.eco_cost;
+
+      if (routeLayer) map.removeLayer(routeLayer);
+
+      let color = "green";
+      if (data.green_cover < 40) color = "red";
+      else if (data.green_cover < 70) color = "yellow";
+
+      routeLayer = L.polyline(data.route_data.coords, { color: color, weight: data.green_cover >= 70 ? 6 : 4 }).addTo(map);
+      map.fitBounds(routeLayer.getBounds());
+
+    } catch (err) {
+      alert("Error fetching route");
+      console.error(err);
+    }
+  });
+</script>
+{% endif %}
+</body>
+</html>
